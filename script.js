@@ -1986,3 +1986,37 @@ function setRating(fieldName, value) {
         star.style.color = parseInt(star.dataset.value) <= value ? '#ffc107' : '#ddd';
     });
 }
+
+// ==================== INITIALIZATION ====================
+async function initApp() {
+    // Initialize icons
+    initializeIcons();
+    
+    // Check for existing session
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        try {
+            const user = JSON.parse(savedUser);
+            // Verify user still exists in DB
+            const dbUser = await dbOperation(DB_CONFIG.userStore, 'readonly', store => store.get(user.email));
+            if (dbUser) {
+                state.currentUser = dbUser;
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('mainContainer').classList.add('show');
+                document.getElementById('headerUser').innerHTML = getIcon('user', 14) + ' ' + dbUser.name;
+                await loadUserForms();
+                showHome();
+                return;
+            }
+        } catch (e) {
+            console.log('Session restore failed:', e);
+            localStorage.removeItem('currentUser');
+        }
+    }
+    
+    // Show auth screen
+    document.getElementById('authContainer').style.display = 'flex';
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', initApp);
