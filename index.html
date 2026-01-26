@@ -21,15 +21,15 @@
             </div>
             <div class="auth-body">
                 <div class="auth-tabs">
-                    <div class="auth-tab active" data-tab="login">Login</div>
-                    <div class="auth-tab" data-tab="signup">Sign Up</div>
+                    <div class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Login</div>
+                    <div class="auth-tab" data-tab="signup" onclick="switchAuthTab('signup')">Sign Up</div>
                 </div>
                 <div class="auth-error" id="authError"></div>
                 <div class="auth-success" id="authSuccess"></div>
                 <div class="auth-loading" id="authLoading" style="display:none;text-align:center;padding:10px;color:#004080;">
                     <span class="spinner"></span> Please wait...
                 </div>
-                <form class="auth-form active" id="loginForm">
+                <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
                     <div class="auth-group">
                         <label class="auth-label">Email / Username</label>
                         <input type="text" class="auth-input" id="loginEmail" required placeholder="your@email.com or username">
@@ -43,7 +43,7 @@
                         <a href="#" onclick="showForgotPassword()" style="color:#004080;font-size:12px;text-decoration:none;">Forgot Password?</a>
                     </div>
                 </form>
-                <form class="auth-form" id="signupForm">
+                <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
                     <div class="auth-group">
                         <label class="auth-label">Full Name</label>
                         <input type="text" class="auth-input" id="signupName" required placeholder="John Doe">
@@ -58,7 +58,7 @@
                     </div>
                     <button type="submit" class="auth-btn"><span data-icon="user-plus" data-size="14"></span> Create Account</button>
                 </form>
-                <form class="auth-form" id="forgotForm">
+                <form class="auth-form" id="forgotForm" onsubmit="handleForgotPassword(event)">
                     <div class="auth-group">
                         <label class="auth-label">Enter your email/username</label>
                         <input type="text" class="auth-input" id="forgotEmail" required placeholder="your@email.com or username">
