@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICF Collect | DHIS2 & Google Sheets Integration</title>
+    <meta name="theme-color" content="#004080">
+    <link rel="apple-touch-icon" href="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Auth Container -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-box">
+            <div class="auth-header">
+                <img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="ICF-SL">
+                <h1>ICF Collect</h1>
+                <p>DHIS2 & Google Sheets Integration</p>
+            </div>
+            <div class="auth-body">
+                <div class="auth-tabs">
+                    <div class="auth-tab active" data-tab="login">Login</div>
+                    <div class="auth-tab" data-tab="signup">Sign Up</div>
+                </div>
+                <div class="auth-error" id="authError"></div>
+                <div class="auth-success" id="authSuccess"></div>
+                <div class="auth-loading" id="authLoading" style="display:none;text-align:center;padding:10px;color:#004080;">
+                    <span class="spinner"></span> Please wait...
+                </div>
+                <form class="auth-form active" id="loginForm">
+                    <div class="auth-group">
+                        <label class="auth-label">Email / Username</label>
+                        <input type="text" class="auth-input" id="loginEmail" required placeholder="your@email.com or username">
+                    </div>
+                    <div class="auth-group">
+                        <label class="auth-label">Password</label>
+                        <input type="password" class="auth-input" id="loginPassword" required placeholder="Enter password">
+                    </div>
+                    <button type="submit" class="auth-btn"><span data-icon="unlock" data-size="14"></span> Login</button>
+                    <div style="text-align:center;margin-top:12px;">
+                        <a href="#" onclick="showForgotPassword()" style="color:#004080;font-size:12px;text-decoration:none;">Forgot Password?</a>
+                    </div>
+                </form>
+                <form class="auth-form" id="signupForm">
+                    <div class="auth-group">
+                        <label class="auth-label">Full Name</label>
+                        <input type="text" class="auth-input" id="signupName" required placeholder="John Doe">
+                    </div>
+                    <div class="auth-group">
+                        <label class="auth-label">Email / Username</label>
+                        <input type="text" class="auth-input" id="signupEmail" required placeholder="your@email.com or username">
+                    </div>
+                    <div class="auth-group">
+                        <label class="auth-label">Password</label>
+                        <input type="password" class="auth-input" id="signupPassword" required minlength="6" placeholder="Min 6 characters">
+                    </div>
+                    <button type="submit" class="auth-btn"><span data-icon="user-plus" data-size="14"></span> Create Account</button>
+                </form>
+                <form class="auth-form" id="forgotForm">
+                    <div class="auth-group">
+                        <label class="auth-label">Enter your email/username</label>
+                        <input type="text" class="auth-input" id="forgotEmail" required placeholder="your@email.com or username">
+                    </div>
+                    <button type="submit" class="auth-btn" style="background:#28a745;"><span data-icon="mail" data-size="14"></span> Send Password</button>
+                    <div style="text-align:center;margin-top:12px;">
+                        <a href="#" onclick="switchAuthTab('login')" style="color:#004080;font-size:12px;text-decoration:none;">Back to Login</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="ICF-SL" class="header-logo">
+            <h1><span data-icon="clipboard-list" data-size="24"></span> ICF Collect</h1>
+        </div>
+        <div class="header-actions">
+            <span class="header-user" id="headerUser"><span data-icon="user" data-size="14"></span> User</span>
+            <button class="header-btn" onclick="showHome()"><span data-icon="home" data-size="14"></span> Home</button>
+            <button class="header-btn success" onclick="newForm()"><span data-icon="file-plus" data-size="14"></span> New</button>
+            <button class="header-btn" onclick="saveCurrentForm()"><span data-icon="save" data-size="14"></span> Save</button>
+            <button class="header-btn" onclick="previewForm()"><span data-icon="eye" data-size="14"></span> Preview</button>
+            <button class="header-btn dhis2" onclick="openDhis2Config()"><span data-icon="link" data-size="14"></span> DHIS2</button>
+            <button class="header-btn primary" onclick="shareForm()"><span data-icon="share-2" data-size="14"></span> Share</button>
+            <button class="header-btn danger" onclick="logout()"><span data-icon="log-out" data-size="14"></span> Logout</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container" id="mainContainer">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-title"><span data-icon="link" data-size="14"></span> DHIS2 Fields</h3>
+                <div class="field-type special" data-type="period"><span data-icon="calendar-days" data-size="14"></span> Period (YYYYMM)</div>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-title"><span data-icon="edit-3" data-size="14"></span> Basic Fields</h3>
+                <div class="field-type" data-type="text"><span data-icon="type" data-size="14"></span> Text Input</div>
+                <div class="field-type" data-type="number"><span data-icon="hash" data-size="14"></span> Number</div>
+                <div class="field-type" data-type="calculation"><span data-icon="calculator" data-size="14"></span> Calculation</div>
+                <div class="field-type" data-type="date"><span data-icon="calendar" data-size="14"></span> Date</div>
+                <div class="field-type" data-type="time"><span data-icon="clock" data-size="14"></span> Time</div>
+                <div class="field-type" data-type="email"><span data-icon="mail" data-size="14"></span> Email</div>
+                <div class="field-type" data-type="phone"><span data-icon="phone" data-size="14"></span> Phone</div>
+                <div class="field-type" data-type="textarea"><span data-icon="align-left" data-size="14"></span> Long Text</div>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-title"><span data-icon="check-square" data-size="14"></span> Selection Fields</h3>
+                <div class="field-type" data-type="select"><span data-icon="chevron-down-square" data-size="14"></span> Dropdown</div>
+                <div class="field-type" data-type="radio"><span data-icon="circle-dot" data-size="14"></span> Radio Buttons</div>
+                <div class="field-type" data-type="checkbox"><span data-icon="check-square" data-size="14"></span> Checkboxes</div>
+                <div class="field-type" data-type="yesno"><span data-icon="toggle-left" data-size="14"></span> Yes / No</div>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-title"><span data-icon="sparkles" data-size="14"></span> Special Fields</h3>
+                <div class="field-type" data-type="gps"><span data-icon="map-pin" data-size="14"></span> GPS Location</div>
+                <div class="field-type" data-type="qrcode"><span data-icon="qr-code" data-size="14"></span> QR/Barcode Scanner</div>
+                <div class="field-type" data-type="cascade"><span data-icon="git-branch" data-size="14"></span> Cascading Dropdown</div>
+                <div class="field-type" data-type="rating"><span data-icon="star" data-size="14"></span> Rating</div>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-title"><span data-icon="layout" data-size="14"></span> Structure</h3>
+                <div class="field-type" data-type="section"><span data-icon="folder" data-size="14"></span> Section / Page</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div class="canvas-header">
+                <input type="text" class="form-title-input" id="formTitle" value="My Data Collection Form" placeholder="Form Title...">
+                <span style="color:#666;font-size:12px;font-weight:600;" id="fieldCount"><span data-icon="bar-chart-3" data-size="12"></span> 0 fields</span>
+            </div>
+
+            <div class="canvas">
+                <div class="form-preview">
+                    <div class="form-preview-header">
+                        <h2 id="previewTitle">My Data Collection Form</h2>
+                        <p>ICF-SL Data Collection System</p>
+                    </div>
+                    <div class="form-preview-body">
+                        <div class="drop-zone" id="dropZone">
+                            <p style="font-size:48px;margin-bottom:12px;"><span data-icon="mouse-pointer-click" data-size="48"></span></p>
+                            <p style="font-weight:600;">Click field types to add them</p>
+                            <p style="font-size:11px;color:#868e96;margin-top:10px;">Add Period + Org Unit fields for DHIS2 sync</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="properties-panel" id="propertiesPanel">
+            <h3 class="properties-title"><span data-icon="settings" data-size="16"></span> Field Properties</h3>
+            <div id="propertiesContent">
+                <div class="no-selection">
+                    <p style="font-size:32px;margin-bottom:12px;"><span data-icon="mouse-pointer-click" data-size="32"></span></p>
+                    <p>Select a field to edit</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Viewer Container -->
+    <div class="viewer-container" id="viewerContainer"></div>
+    <div class="viewer-container" id="homeContainer"></div>
+    
+    <!-- Footer -->
+    <footer class="footer">© 2025 Informatics Consultancy Firm - Sierra Leone (ICF-SL) | ICF Collect v3</footer>
+
+    <!-- DHIS2 Configuration Modal -->
+    <div class="modal-overlay" id="dhis2Modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><span data-icon="link" data-size="18"></span> DHIS2 Configuration</h3>
+                <button class="modal-close" onclick="closeModal('dhis2Modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="dhis2Status" class="status-badge disconnected">
+                    <span data-icon="x-circle" data-size="14"></span> <span>Not Connected</span>
+                </div>
+                
+                <div class="config-section dhis2">
+                    <div class="config-title dhis2"><span data-icon="globe" data-size="14"></span> Server Connection</div>
+                    <label class="config-label">DHIS2 Server URL</label>
+                    <input type="url" class="config-input" id="dhis2Url" placeholder="https://your-dhis2-instance.org">
+                    
+                    <div class="config-row">
+                        <div>
+                            <label class="config-label">Username</label>
+                            <input type="text" class="config-input" id="dhis2Username" placeholder="Username">
+                        </div>
+                        <div>
+                            <label class="config-label">Password</label>
+                            <input type="password" class="config-input" id="dhis2Password" placeholder="Password">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <div class="config-title"><span data-icon="refresh-cw" data-size="14"></span> Sync Mode</div>
+                    <div class="sync-mode-selector">
+                        <div class="sync-mode-option selected" data-mode="aggregate" onclick="selectSyncMode('aggregate')">
+                            <h4><span data-icon="bar-chart-3" data-size="16"></span> Aggregate</h4>
+                            <p>Creates Dataset + Data Elements</p>
+                            <p style="font-size:9px;color:#004080;margin-top:4px;">Syncs summarized data by Facility/Period</p>
+                        </div>
+                        <div class="sync-mode-option" data-mode="tracker" onclick="selectSyncMode('tracker')">
+                            <h4><span data-icon="clipboard-list" data-size="16"></span> Event Program</h4>
+                            <p>Creates Program + Data Elements</p>
+                            <p style="font-size:9px;color:#6f42c1;margin-top:4px;">Syncs each record as individual event</p>
+                        </div>
+                    </div>
+                    
+                    <div id="aggregateConfig">
+                        <div class="config-row">
+                            <div>
+                                <label class="config-label">Period Column</label>
+                                <select class="config-input" id="dhis2PeriodColumn">
+                                    <option value="">-- Select field --</option>
+                                </select>
+                                <p class="help-text" style="font-size:10px;color:#666;margin-top:4px;">Field with period (YYYYMM)</p>
+                            </div>
+                            <div>
+                                <label class="config-label">Org Unit Column</label>
+                                <select class="config-input" id="dhis2OrgUnitColumn">
+                                    <option value="">-- Select field --</option>
+                                </select>
+                                <p class="help-text" style="font-size:10px;color:#666;margin-top:4px;">Field with facility/org unit name</p>
+                            </div>
+                        </div>
+                        <div class="config-row">
+                            <div>
+                                <label class="config-label">Org Unit Level</label>
+                                <select class="config-input" id="dhis2OrgLevel">
+                                    <option value="1">Level 1 (National)</option>
+                                    <option value="2">Level 2 (Region)</option>
+                                    <option value="3">Level 3 (District)</option>
+                                    <option value="4">Level 4 (Chiefdom)</option>
+                                    <option value="5" selected>Level 5 (Facility)</option>
+                                    <option value="6">Level 6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="config-label">Period Type</label>
+                                <select class="config-input" id="dhis2PeriodType">
+                                    <option value="Monthly" selected>Monthly</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Daily">Daily</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="trackerConfig" style="display:none;">
+                        <label class="config-label">Program ID</label>
+                        <input type="text" class="config-input" id="dhis2ProgramId" placeholder="Leave empty to auto-create, or enter existing Program ID">
+                        <p class="help-text">Leave empty: Setup will create a new Event Program. Or enter an existing Program UID to use it.</p>
+                    </div>
+                </div>
+                
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+                    <button class="modal-btn dhis2" onclick="testDhis2Connection()"><span data-icon="search" data-size="14"></span> Test Connection</button>
+                    <button class="modal-btn primary" onclick="saveDhis2Config()"><span data-icon="save" data-size="14"></span> Save Config</button>
+                </div>
+                
+                <div class="config-section">
+                    <div class="config-title"><span data-icon="rocket" data-size="14"></span> Setup & Sync Actions</div>
+                    <p style="font-size:11px;color:#666;margin-bottom:15px;">
+                        <strong>Setup DHIS2:</strong> Creates Dataset/Program and Data Elements<br>
+                        <strong>Sync Case-Based:</strong> Pushes individual records as Events (Tracker)<br>
+                        <strong>Sync Aggregate:</strong> Pushes aggregated data values (DataSets)
+                    </p>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button class="modal-btn success" onclick="setupDhis2()" style="flex:1;"><span data-icon="settings" data-size="14"></span> Setup DHIS2</button>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+                        <button class="modal-btn purple" onclick="syncCaseBased()" style="flex:1;"><span data-icon="list" data-size="14"></span> Sync Case-Based</button>
+                        <button class="modal-btn" onclick="syncAggregate()" style="flex:1;background:#17a2b8;color:#fff;"><span data-icon="bar-chart-3" data-size="14"></span> Sync Aggregate</button>
+                    </div>
+                </div>
+                
+                <div class="sync-log" id="syncLog">
+                    <div class="log-entry info">Ready...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <div class="modal-header primary">
+                <h3><span data-icon="share-2" data-size="18"></span> Share Form</h3>
+                <button class="modal-close" onclick="closeModal('shareModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-container">
+                    <div style="font-weight:700;color:#004080;margin-bottom:10px;"><span data-icon="link" data-size="14"></span> Share Link</div>
+                    <div class="qr-url" id="shareUrl"></div>
+                    <div class="qr-actions">
+                        <button class="modal-btn primary" onclick="copyShareUrl()"><span data-icon="copy" data-size="14"></span> Copy URL</button>
+                    </div>
+                </div>
+                
+                <div style="background:#e3f2fd;padding:15px;border-radius:8px;margin-top:20px;">
+                    <h4 style="color:#1565c0;margin:0 0 10px 0;"><span data-icon="info" data-size="14"></span> What's included in the shared link</h4>
+                    <ul style="margin:0;padding-left:20px;font-size:12px;color:#333;">
+                        <li>✓ Form fields and configuration</li>
+                        <li>✓ Automatic Google Sheets sync (sheet = form name)</li>
+                        <li>✓ DHIS2 connection & credentials (if configured)</li>
+                        <li>✓ Full sync capability to DHIS2</li>
+                    </ul>
+                </div>
+                
+                <div style="background:#fff3cd;padding:15px;border-radius:8px;margin-top:10px;">
+                    <h4 style="color:#856404;margin:0 0 5px 0;"><span data-icon="alert-triangle" data-size="14"></span> Security Note</h4>
+                    <p style="margin:0;font-size:12px;color:#856404;">DHIS2 credentials are embedded in the link. Only share with trusted users.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+    
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" style="display:none;position:fixed;top:0;left:0;right:0;background:#dc3545;color:white;padding:8px;text-align:center;font-size:12px;font-weight:600;z-index:10000;">
+        ⚠️ You are offline - Data will sync when back online
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Application Script -->
+    <script src="script.js"></script>
+</body>
+</html>
