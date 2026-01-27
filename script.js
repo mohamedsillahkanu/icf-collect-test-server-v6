@@ -1182,6 +1182,38 @@ async function initApp() {
     // Initialize icons
     initializeIcons();
     
+    // ✅ Add event listeners for login/signup forms
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+        // Also add click handler for the button directly
+        const loginBtn = loginForm.querySelector('button[type="submit"]');
+        if (loginBtn) {
+            loginBtn.style.cursor = 'pointer';
+            loginBtn.disabled = false;
+        }
+    }
+    
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        signupForm.addEventListener('submit', handleSignup);
+        // Also add click handler for the button directly
+        const signupBtn = signupForm.querySelector('button[type="submit"]');
+        if (signupBtn) {
+            signupBtn.style.cursor = 'pointer';
+            signupBtn.disabled = false;
+        }
+    }
+    
+    // Add click handlers for auth tabs
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.style.cursor = 'pointer';
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            if (tabName) switchAuthTab(tabName);
+        });
+    });
+    
     // ✅ FIX: Add click handlers for field type buttons in sidebar
     // This is the critical fix - without this, clicking field types does nothing
     document.querySelectorAll('.field-type').forEach(el => {
@@ -3719,6 +3751,11 @@ window.setRating = setRating;
 window.addOption = addOption;
 window.removeOption = removeOption;
 window.logout = logout;
+window.handleLogin = handleLogin;
+window.handleSignup = handleSignup;
+window.handleForgotPassword = handleForgotPassword;
+window.switchAuthTab = switchAuthTab;
+window.showForgotPassword = showForgotPassword;
 window.testDHIS2Connection = testDHIS2Connection;
 window.saveDHIS2Config = saveDHIS2Config;
 window.saveGoogleConfig = saveGoogleConfig;
